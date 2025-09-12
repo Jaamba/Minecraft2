@@ -10,8 +10,25 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "chunk.h"
 
 #define PI 4*atan(1)
+
+/*
+    Idea: Un chunk è un array tridimensionale di block_type.
+    ad ogni frame si itera tra gli elementi del chunk e si renderizza il 
+    blocco con una funzione render_block(chunk c, int i, int j).
+    In questo modo avviene la parte di rendering.
+    Per la parte fisica si itera tra i blocchi aggiornando il blocco corrente
+    e i blocchi circostanti in base all'id del block_type. Se per esempio
+    blocco.id == "sabbia" si aggiorna la posizione del blocco in modo tale
+    da farlo cadere. 
+*/
+
+/* BLOCK TYPE LIST ---------------------------------------------------------------------- */
+//                       ID       isAir       hasGravity
+blockType b_air       = {0,       true,       false};
+blockType b_dirt      = {1,       false,      false};
 
 // window size (not resizable)
 #define WIDTH 800

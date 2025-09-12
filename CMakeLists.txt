@@ -7,7 +7,8 @@ find_package(OpenGL REQUIRED)
 add_executable(minecraft2
     src/Shader.cpp
     src/main.cpp 
-    src/glad.c)
+    src/glad.c
+    src/chunk.cpp)
     
 
 target_link_libraries(minecraft2 
