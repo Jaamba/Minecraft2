@@ -18,6 +18,8 @@
 #define WIDTH 800
 #define HEIGHT 800
 
+#define RENDER_DISTANCE 1
+
 /*
     Idea: Un chunk è un array tridimensionale di block_type.
     ad ogni frame si itera tra gli elementi del chunk e si renderizza il 
@@ -88,6 +90,7 @@ void loadTexture(const char *filename, unsigned int *texture);
 int main() {
     std::cout << "hello minecraft 2\n";
 
+
     // GLFW WINDOW CREATION -------------------------------------------------------------
     glfwInit();
 
@@ -116,6 +119,7 @@ int main() {
 
     // Speciefies OpenGL viewport
     glViewport(0, 0, WIDTH, HEIGHT);
+
 
     // BUFFERS --------------------------------------------------------------------------
     
@@ -167,6 +171,7 @@ int main() {
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+
     // TEXTURE LOADING ------------------------------------------------------------------
     
     // Counts textured blocks; -1 for air
@@ -179,6 +184,31 @@ int main() {
         loadTexture(t_texturesIDs[i].filename, textures + i);
     }
     
+
+    // SHADERS LOADING ------------------------------------------------------------------
+    // CHUNKS CREATION ------------------------------------------------------------------
+    Chunk activeChunks[RENDER_DISTANCE][RENDER_DISTANCE][RENDER_DISTANCE];
+
+    // Assigns active chunks
+    // tmp will be come loadChunk(chunkBuffer) and will use player coordinates
+    // player's chunk will always be chunk coordinate (0, 0, 0)
+    for (int i = -RENDER_DISTANCE; i < RENDER_DISTANCE; i++)
+    {
+        for (int j = -RENDER_DISTANCE; j < RENDER_DISTANCE; j++)
+        {
+            for (int k = -RENDER_DISTANCE; k < RENDER_DISTANCE; k++)
+            {
+                Chunk tmp(i, j, k);
+                tmp.fill(b_air);
+                activeChunks[i][j][k] = tmp;
+            }
+        }
+    }
+
+    // Temporary 
+    Chunk tmp(0, 0, 0);
+    tmp.fill(b_dirt);
+    activeChunks[0][0][0] = tmp;
 
     // MAIN PROGRAM LOOP ----------------------------------------------------------------
 

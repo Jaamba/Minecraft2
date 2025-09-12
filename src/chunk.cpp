@@ -1,6 +1,10 @@
 #include "chunk.h"
 
-blockType Chunk::getBlock(int x, int y, int z) {
+Chunk::Chunk(int x, int y, int z) {
+    m_x = x; m_y = y; m_z = z;
+}
+
+blockType Chunk::getBlock(int x, int y, int z) const {
     if(x >= CHUNCK_SIZE || y >= CHUNCK_SIZE || z >= CHUNCK_SIZE) {
         std::cerr << "Error: getBlock index cannot be larger than chunk size\n";
     }

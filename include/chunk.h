@@ -18,15 +18,18 @@ class Chunk
 private:
     // Array of block types in the chunk
     blockType m_blocks[CHUNCK_SIZE][CHUNCK_SIZE][CHUNCK_SIZE];
+    int m_x, m_y, m_z;
 
 public:
     bool isActive = false;
     
-    Chunk();
+    // Creates empty chunk at given chunk coordinates
+    Chunk() = default;
+    Chunk(int x, int y, int z);
     virtual ~Chunk() = default;
 
     // block get/set utilites
-    blockType getBlock(int x, int y, int z);
+    blockType getBlock(int x, int y, int z) const;
     void setBlock(blockType type, int x, int y, int z);
     
     // chunk generation
