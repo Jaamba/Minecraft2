@@ -184,29 +184,43 @@ int main() {
         loadTexture(t_texturesIDs[i].filename, textures + i);
     }
     
+   
+    // MOVEMENT ------------------------------------------------------------------
+
+    glm::vec3 playerPos = glm::vec3(0, 0, 0);
+    glm::vec3 playerChunkPos = glm::vec3(playerPos.x/CHUNCK_SIZE, playerPos.y/CHUNCK_SIZE, playerPos.z/CHUNCK_SIZE);
 
     // SHADERS LOADING ------------------------------------------------------------------
+    
+    // Load shaders
+    Shader baseShader("../shaders/base.vert", "../shaders/base.frag");
+
+    // Finds locations of model, view and project matrix in base shader
+    unsigned int baseModelLoc = glGetUniformLocation(baseShader.ID, "model");
+	unsigned int baseViewLoc = glGetUniformLocation(baseShader.ID, "view");
+	unsigned int baseProjectionLoc = glGetUniformLocation(baseShader.ID, "projection");
+
+
     // CHUNKS CREATION ------------------------------------------------------------------
-    Chunk activeChunks[RENDER_DISTANCE][RENDER_DISTANCE][RENDER_DISTANCE];
+    
+    Chunk activeChunks[2*RENDER_DISTANCE + 1][2*RENDER_DISTANCE + 1][2*RENDER_DISTANCE + 1];
 
     // Assigns active chunks
-    // tmp will be come loadChunk(chunkBuffer) and will use player coordinates
-    // player's chunk will always be chunk coordinate (0, 0, 0)
     for (int i = -RENDER_DISTANCE; i < RENDER_DISTANCE; i++)
     {
         for (int j = -RENDER_DISTANCE; j < RENDER_DISTANCE; j++)
         {
             for (int k = -RENDER_DISTANCE; k < RENDER_DISTANCE; k++)
             {
-                Chunk tmp(i, j, k);
+                Chunk tmp(i + playerChunkPos.x,j + playerChunkPos.y,k + playerChunkPos.z);
                 tmp.fill(b_air);
-                activeChunks[i][j][k] = tmp;
+                activeChunks[i + 2*RENDER_DISTANCE - 1][j + 2*RENDER_DISTANCE - 1][k + 2*RENDER_DISTANCE - 1] = tmp;
             }
         }
     }
 
     // Temporary 
-    Chunk tmp(0, 0, 0);
+    Chunk tmp(playerChunkPos.x, playerChunkPos.y, playerChunkPos.z);
     tmp.fill(b_dirt);
     activeChunks[0][0][0] = tmp;
 
@@ -216,9 +230,70 @@ int main() {
     glEnable(GL_DEPTH_TEST);
 
     while (!glfwWindowShouldClose(window)) {
+
         // color and buffer refresh
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Matrixes handling
+        glm::mat4 model(1.0f);
+        glm::mat4 view = glm::lookAt(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0));
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WIDTH / HEIGHT, 0.1f, 100.0f);;
+
+
+        // Activates shader (for now all blocks have the same one)
+        baseShader.Activate();
+
+        // Chunk rendering
+        for (int cx = -RENDER_DISTANCE; cx < RENDER_DISTANCE; cx++)
+        {
+            for (int cy = -RENDER_DISTANCE; cy < RENDER_DISTANCE; cy++)
+            {
+                for (int cz = -RENDER_DISTANCE; cz < RENDER_DISTANCE; cz++)
+                {
+                    Chunk activeChunk = activeChunks[cx + 2*RENDER_DISTANCE - 1][cy + 2*RENDER_DISTANCE - 1][cz + 2*RENDER_DISTANCE - 1];
+                    // Translates model to bottom left corner of chunk
+                    glm::translate(model, activeChunk.getChunkPos());
+                    
+                    // Render single blocks
+                    for (int i = 0; i < CHUNCK_SIZE; i++)
+                    {
+                        for (int j = 0; j < CHUNCK_SIZE; j++)
+                        {
+                            for (int k = 0; k < CHUNCK_SIZE; k++)
+                            {
+                                blockType activeBlock = activeChunk.getBlock(i, j, k);
+
+                                // Ignores air rendering
+                                if(activeBlock.isAir) continue;
+
+                                glm::translate(model, glm::vec3(i, j, k));
+
+                                // Assigns matrices values to shaders
+                                glUniformMatrix4fv(baseModelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		                        glUniformMatrix4fv(baseViewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		                        glUniformMatrix4fv(baseProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+                                
+                                // Binds block texture
+                                glBindTexture(GL_TEXTURE_2D, textures[activeBlock.ID]);
+
+                                // Binds dynamic VAO if the block has gravity
+                                if (activeBlock.hasGravity) {
+                                    glBindVertexArray(VAO[1]);
+                                }
+                                else {
+                                    glBindVertexArray(VAO[0]);
+                                }
+
+                                // Renders the block
+                                glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
 
         // Buffers swap and events
         glfwSwapBuffers(window);

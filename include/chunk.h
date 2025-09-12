@@ -5,6 +5,9 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 struct blockType
 {
@@ -26,11 +29,13 @@ public:
     // Creates empty chunk at given chunk coordinates
     Chunk() = default;
     Chunk(int x, int y, int z);
+    Chunk(glm::vec3 pos);
     virtual ~Chunk() = default;
 
     // block get/set utilites
     blockType getBlock(int x, int y, int z) const;
     void setBlock(blockType type, int x, int y, int z);
+    glm::vec3 getChunkPos();
     
     // chunk generation
     void fill(blockType type);

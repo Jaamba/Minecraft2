@@ -4,6 +4,10 @@ Chunk::Chunk(int x, int y, int z) {
     m_x = x; m_y = y; m_z = z;
 }
 
+Chunk::Chunk(glm::vec3 pos) {
+    m_x = (int)pos.x; m_y = (int)pos.y; m_z = (int)pos.z;
+}
+
 blockType Chunk::getBlock(int x, int y, int z) const {
     if(x >= CHUNCK_SIZE || y >= CHUNCK_SIZE || z >= CHUNCK_SIZE) {
         std::cerr << "Error: getBlock index cannot be larger than chunk size\n";
@@ -31,4 +35,8 @@ void Chunk::fill(blockType type) {
             }
         }
     }
+}
+
+glm::vec3 Chunk::getChunkPos() {
+    return glm::vec3(m_x, m_y, m_z);
 }
