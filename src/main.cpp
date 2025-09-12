@@ -34,6 +34,45 @@ blockType b_dirt      = {1,       false,      false};
 #define WIDTH 800
 #define HEIGHT 800
 
+// Block geometry info
+float b_vertices[] = {
+    // position           // UV
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 0
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // 1
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 2
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // 3
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 4
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // 5
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 6
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // 7
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 8
+    -0.5f,  0.5f, -0.5f,  1.0f, 0.0f, // 9
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 10
+    -0.5f, -0.5f,  0.5f,  0.0f, 1.0f, // 11
+     0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 12
+     0.5f,  0.5f, -0.5f,  1.0f, 0.0f, // 13
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 14
+     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, // 15
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 16
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // 17
+     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, // 18
+    -0.5f, -0.5f,  0.5f,  0.0f, 1.0f, // 19
+    -0.5f,  0.5f, -0.5f,  0.0f, 0.0f, // 20
+     0.5f,  0.5f, -0.5f,  1.0f, 0.0f, // 21
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 22
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f  // 23
+};
+unsigned int b_indices[] = {
+    0, 1, 2,  2, 3, 0,
+    4, 5, 6,  6, 7, 4,
+    8, 9,10, 10,11, 8,
+    12,13,14, 14,15,12,
+    16,17,18, 18,19,16,
+    20,21,22, 22,23,20
+};
+
+void loadTexture(const char *filename, unsigned char *data);
+
 int main() {
     std::cout << "hello minecraft 2\n";
 
@@ -66,8 +105,57 @@ int main() {
     // Speciefies OpenGL viewport
     glViewport(0, 0, WIDTH, HEIGHT);
 
-                                                                                        
-    // Main program loop ----------------------------------------------------------------
+    // BUFFERS --------------------------------------------------------------------------
+    
+    // defines the buffers. Index 0 for static blocks, 1 for dynamics
+    GLuint VAO[2], VBO[2], EBO[2];
+
+    // Generates the buffers
+    glGenVertexArrays(2, VAO);
+    glGenBuffers(2, VBO);
+    glGenBuffers(2, EBO);
+
+    // Binds the buffers for static blocks
+    glBindVertexArray(VAO[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]);
+
+    // Sends vertecies and indicies data to the buffers
+    glBufferData(GL_ARRAY_BUFFER, sizeof(b_vertices), b_vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(b_indices), b_indices, GL_STATIC_DRAW);
+
+    // Enables position and uv attributes for shaders
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    // Unbinds
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // Binds the buffers for dynamic blocks
+    glBindVertexArray(VAO[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[1]);
+
+    // Sends vertecies and indicies data to the buffers
+    glBufferData(GL_ARRAY_BUFFER, sizeof(b_vertices), b_vertices, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(b_indices), b_indices, GL_DYNAMIC_DRAW);
+
+    // Enables position and uv attributes for shaders
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    // Unbinds
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // MAIN PROGRAM LOOP ----------------------------------------------------------------
 
     // Enables depth test for OpenGL to properly render
     glEnable(GL_DEPTH_TEST);
@@ -85,4 +173,35 @@ int main() {
     // Terminates the program
     glfwDestroyWindow(window);
     glfwTerminate();
+}
+
+void loadTexture(const char *filename, unsigned int *texture) {
+    // Creates and binds the OpenGL object
+    glGenTextures(1, texture);
+    glBindTexture(GL_TEXTURE_2D, *texture);
+
+	// sets filtering options
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // Loads the image
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load(filename, &width, &height, &nrChannels, 0);
+    
+    // Generates the OpenGL texture
+	if(data) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else {
+		std::cout << "Failed to load the texture" << std::endl;
+	}
+
+    // Removes the image texture from memory
+	stbi_image_free(data);
+
+    // Unbinds the texture
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
