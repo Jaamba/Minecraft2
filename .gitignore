@@ -1,0 +1,9 @@
+build/*
+include/glad/*
+include/glad
+include/glm/*
+include/glm
+include/stb_image.h
+src/glad.c
+.directory
+build
