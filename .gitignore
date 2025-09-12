@@ -7,3 +7,5 @@ include/stb_image.h
 src/glad.c
 .directory
 build
+settings.json
+.vscode/*
