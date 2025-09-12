@@ -14,6 +14,10 @@
 
 #define PI 4*atan(1)
 
+// window size (not resizable)
+#define WIDTH 800
+#define HEIGHT 800
+
 /*
     Idea: Un chunk è un array tridimensionale di block_type.
     ad ogni frame si itera tra gli elementi del chunk e si renderizza il 
@@ -27,12 +31,20 @@
 
 /* BLOCK TYPE LIST ---------------------------------------------------------------------- */
 //                       ID       isAir       hasGravity
-blockType b_air       = {0,       true,       false};
-blockType b_dirt      = {1,       false,      false};
+blockType b_dirt      = {0,       false,      false};
+blockType b_air       = {1,       true,       false};
 
-// window size (not resizable)
-#define WIDTH 800
-#define HEIGHT 800
+/* TEXTURE ID FILENAME LIST --------------------------------------------------------------*/
+struct idTexture
+{
+    unsigned int ID;
+    const char* filename;
+};
+
+idTexture t_texturesIDs[] =
+{
+    /* 1 - dirt */ {0, "../textures/0_dirt.jpg"}
+};
 
 // Block geometry info
 float b_vertices[] = {
@@ -71,7 +83,7 @@ unsigned int b_indices[] = {
     20,21,22, 22,23,20
 };
 
-void loadTexture(const char *filename, unsigned char *data);
+void loadTexture(const char *filename, unsigned int *texture);
 
 int main() {
     std::cout << "hello minecraft 2\n";
@@ -154,6 +166,19 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // TEXTURE LOADING ------------------------------------------------------------------
+    
+    // Counts textured blocks; -1 for air
+    int texturedBlocksN = sizeof(t_texturesIDs)/sizeof(t_texturesIDs[0]) - 1;
+    unsigned int textures[texturedBlocksN];
+
+    // Pre-loads textures and stores them in textures[]
+    for (int i = 0; i < texturedBlocksN; i++)
+    {
+        loadTexture(t_texturesIDs[i].filename, textures + i);
+    }
+    
 
     // MAIN PROGRAM LOOP ----------------------------------------------------------------
 
