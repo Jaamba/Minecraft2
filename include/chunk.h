@@ -1,7 +1,7 @@
 #ifndef CHUNCK
 #define CHUNCK
 
-#define CHUNCK_SIZE 100
+#define CHUNCK_SIZE 3
 
 #include <iostream>
 #include <stdexcept>
@@ -27,7 +27,7 @@ public:
     bool isActive = false;
     
     // Creates empty chunk at given chunk coordinates
-    Chunk() = default;
+    Chunk();
     Chunk(int x, int y, int z);
     Chunk(glm::vec3 pos);
     virtual ~Chunk() = default;

@@ -1,5 +1,8 @@
 #include "chunk.h"
 
+Chunk::Chunk() {
+}
+
 Chunk::Chunk(int x, int y, int z) {
     m_x = x; m_y = y; m_z = z;
 }

@@ -18,7 +18,7 @@
 #define WIDTH 800
 #define HEIGHT 800
 
-#define RENDER_DISTANCE 1
+#define RENDER_DISTANCE 2
 
 /*
     Idea: Un chunk è un array tridimensionale di block_type.
@@ -174,8 +174,8 @@ int main() {
 
     // TEXTURE LOADING ------------------------------------------------------------------
     
-    // Counts textured blocks; -1 for air
-    int texturedBlocksN = sizeof(t_texturesIDs)/sizeof(t_texturesIDs[0]) - 1;
+    // Counts textured blocks
+    int texturedBlocksN = sizeof(t_texturesIDs)/sizeof(t_texturesIDs[0]);
     unsigned int textures[texturedBlocksN];
 
     // Pre-loads textures and stores them in textures[]
@@ -206,54 +206,51 @@ int main() {
     Chunk activeChunks[2*RENDER_DISTANCE + 1][2*RENDER_DISTANCE + 1][2*RENDER_DISTANCE + 1];
 
     // Assigns active chunks
-    for (int i = -RENDER_DISTANCE; i < RENDER_DISTANCE; i++)
+    for (int i = -RENDER_DISTANCE; i <= RENDER_DISTANCE; i++)
     {
-        for (int j = -RENDER_DISTANCE; j < RENDER_DISTANCE; j++)
+        for (int j = -RENDER_DISTANCE; j <= RENDER_DISTANCE; j++)
         {
-            for (int k = -RENDER_DISTANCE; k < RENDER_DISTANCE; k++)
+            for (int k = -RENDER_DISTANCE; k <= RENDER_DISTANCE; k++)
             {
                 Chunk tmp(i + playerChunkPos.x,j + playerChunkPos.y,k + playerChunkPos.z);
                 tmp.fill(b_air);
-                activeChunks[i + 2*RENDER_DISTANCE - 1][j + 2*RENDER_DISTANCE - 1][k + 2*RENDER_DISTANCE - 1] = tmp;
+                activeChunks[i + RENDER_DISTANCE][j + RENDER_DISTANCE][k + RENDER_DISTANCE] = tmp;
             }
         }
     }
-
-    // Temporary 
-    Chunk tmp(playerChunkPos.x, playerChunkPos.y, playerChunkPos.z);
+    Chunk tmp(0, 0, 0);
     tmp.fill(b_dirt);
-    activeChunks[0][0][0] = tmp;
+    activeChunks[2][2][2] = tmp;
 
     // MAIN PROGRAM LOOP ----------------------------------------------------------------
 
     // Enables depth test for OpenGL to properly render
     glEnable(GL_DEPTH_TEST);
 
+    glm::mat4 view = glm::lookAt(glm::vec3(-10,2,5), glm::vec3(0,0,0), glm::vec3(0,1,0));
+
     while (!glfwWindowShouldClose(window)) {
 
         // color and buffer refresh
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.1f, 0.5f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Matrixes handling
-        glm::mat4 model(1.0f);
-        glm::mat4 view = glm::lookAt(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0));
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WIDTH / HEIGHT, 0.1f, 100.0f);;
+        
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WIDTH / HEIGHT, 0.1f, 100.0f);
 
 
         // Activates shader (for now all blocks have the same one)
         baseShader.Activate();
 
         // Chunk rendering
-        for (int cx = -RENDER_DISTANCE; cx < RENDER_DISTANCE; cx++)
+        for (int cx = -RENDER_DISTANCE; cx <= RENDER_DISTANCE; cx++)
         {
-            for (int cy = -RENDER_DISTANCE; cy < RENDER_DISTANCE; cy++)
+            for (int cy = -RENDER_DISTANCE; cy <= RENDER_DISTANCE; cy++)
             {
-                for (int cz = -RENDER_DISTANCE; cz < RENDER_DISTANCE; cz++)
+                for (int cz = -RENDER_DISTANCE; cz <= RENDER_DISTANCE; cz++)
                 {
-                    Chunk activeChunk = activeChunks[cx + 2*RENDER_DISTANCE - 1][cy + 2*RENDER_DISTANCE - 1][cz + 2*RENDER_DISTANCE - 1];
-                    // Translates model to bottom left corner of chunk
-                    glm::translate(model, activeChunk.getChunkPos());
+                    Chunk activeChunk = activeChunks[cx + RENDER_DISTANCE][cy + RENDER_DISTANCE][cz + RENDER_DISTANCE];
                     
                     // Render single blocks
                     for (int i = 0; i < CHUNCK_SIZE; i++)
@@ -267,7 +264,12 @@ int main() {
                                 // Ignores air rendering
                                 if(activeBlock.isAir) continue;
 
-                                glm::translate(model, glm::vec3(i, j, k));
+                                // Translates model to bottom left corner of chunk
+                                glm::mat4 model(1.0f);
+                                model = glm::translate(model, (float)CHUNCK_SIZE*activeChunk.getChunkPos() + glm::vec3(i, j, k));
+
+                                // Sets view to look at active chunk
+                                view = glm::lookAt(glm::vec3(-20,2,5), glm::vec3(0,0,0), glm::vec3(0,1,0));
 
                                 // Assigns matrices values to shaders
                                 glUniformMatrix4fv(baseModelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -285,7 +287,9 @@ int main() {
                                     glBindVertexArray(VAO[0]);
                                 }
 
+
                                 // Renders the block
+                                //std::cout << "drawing block...\n";
                                 glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
                             }
                         }
@@ -293,8 +297,6 @@ int main() {
                 }
             }
         }
-        
-
         // Buffers swap and events
         glfwSwapBuffers(window);
         glfwPollEvents();
