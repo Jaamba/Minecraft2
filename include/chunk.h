@@ -28,14 +28,14 @@ public:
     
     // Creates empty chunk at given chunk coordinates
     Chunk();
-    Chunk(int x, int y, int z);
+    Chunk(int x, int y, int z, std::string s);
     Chunk(glm::vec3 pos);
     virtual ~Chunk() = default;
 
     // block get/set utilites
     blockType getBlock(int x, int y, int z) const;
     void setBlock(blockType type, int x, int y, int z);
-    glm::vec3 getChunkPos();
+    glm::vec3 getChunkPos() const;
     
     // chunk generation
     void fill(blockType type);

@@ -3,8 +3,22 @@
 Chunk::Chunk() {
 }
 
-Chunk::Chunk(int x, int y, int z) {
+Chunk::Chunk(int x, int y, int z, std::string s) {
     m_x = x; m_y = y; m_z = z;
+
+    // temporary
+    if (s == "0")
+    {
+        fill({0,       false,      false});
+    }
+    if (s == "1")
+    {
+        fill({1,       false,      false});
+    }
+    if (s == "2")
+    {
+        fill({2,       true,      false});
+    }
 }
 
 Chunk::Chunk(glm::vec3 pos) {
@@ -40,6 +54,6 @@ void Chunk::fill(blockType type) {
     }
 }
 
-glm::vec3 Chunk::getChunkPos() {
+glm::vec3 Chunk::getChunkPos() const{
     return glm::vec3(m_x, m_y, m_z);
 }
