@@ -11,12 +11,14 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "chunk.h"
+#include "camera.hpp"
 
 #define PI 4*atan(1)
 
 // window size (not resizable)
 #define WIDTH 800
 #define HEIGHT 800
+#define SCALE_FACTOR 0.5
 
 #define RENDER_DISTANCE 2
 
@@ -85,11 +87,19 @@ unsigned int b_indices[] = {
     20,21,22, 22,23,20
 };
 
+// Time global variables
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+float currentFrame = 0.0f;
+
+// Player
+Camera player(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 2.5f, 0.1f);
+
 void loadTexture(const char *filename, unsigned int *texture);
+void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 
 int main() {
     std::cout << "hello minecraft 2\n";
-
 
     // GLFW WINDOW CREATION -------------------------------------------------------------
     glfwInit();
@@ -110,6 +120,9 @@ int main() {
         return -1;
     }
     glfwMakeContextCurrent(window);
+    
+    // hides cursor
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // loads GLAD for OpenGL
     if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -187,8 +200,11 @@ int main() {
    
     // MOVEMENT ------------------------------------------------------------------
 
-    glm::vec3 playerPos = glm::vec3(0, 0, 0);
-    glm::vec3 playerChunkPos = glm::vec3(playerPos.x/CHUNCK_SIZE, playerPos.y/CHUNCK_SIZE, playerPos.z/CHUNCK_SIZE);
+    // Creates the camera
+    glm::vec3 playerChunkPos = player.getPosition()/((float)CHUNCK_SIZE);
+
+    // Sets mouse callback function for camera direction update
+    glfwSetCursorPosCallback(window, mouse_callback);
 
     // SHADERS LOADING ------------------------------------------------------------------
     
@@ -222,23 +238,32 @@ int main() {
     tmp.fill(b_dirt);
     activeChunks[2][2][2] = tmp;
 
+
     // MAIN PROGRAM LOOP ----------------------------------------------------------------
 
     // Enables depth test for OpenGL to properly render
     glEnable(GL_DEPTH_TEST);
 
-    glm::mat4 view = glm::lookAt(glm::vec3(-10,2,5), glm::vec3(0,0,0), glm::vec3(0,1,0));
-
+    // view and projection matrices
+    glm::mat4 view = player.getView();
+    glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float) WIDTH / HEIGHT, 0.1f, 100.0f);
+    
     while (!glfwWindowShouldClose(window)) {
 
+        // Computing FPS
+        currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
+        
+        // Input and movement
+        player.processCameraMovement(window, deltaTime);
+        playerChunkPos = player.getPosition()/((float)CHUNCK_SIZE);
+        
+        
         // color and buffer refresh
         glClearColor(0.1f, 0.5f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // Matrixes handling
-        
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WIDTH / HEIGHT, 0.1f, 100.0f);
-
 
         // Activates shader (for now all blocks have the same one)
         baseShader.Activate();
@@ -269,7 +294,7 @@ int main() {
                                 model = glm::translate(model, (float)CHUNCK_SIZE*activeChunk.getChunkPos() + glm::vec3(i, j, k));
 
                                 // Sets view to look at active chunk
-                                view = glm::lookAt(glm::vec3(-20,2,5), glm::vec3(0,0,0), glm::vec3(0,1,0));
+                                view = player.getView();
 
                                 // Assigns matrices values to shaders
                                 glUniformMatrix4fv(baseModelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -297,6 +322,8 @@ int main() {
                 }
             }
         }
+
+
         // Buffers swap and events
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -336,4 +363,8 @@ void loadTexture(const char *filename, unsigned int *texture) {
 
     // Unbinds the texture
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
+    player.cameraMouseCallback(window, xpos, ypos);
 }
