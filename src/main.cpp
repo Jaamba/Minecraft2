@@ -22,7 +22,7 @@ float lastFrame = 0.0f;
 float currentFrame = 0.0f;
 
 // Player
-Player player(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 2.5f, 0.1f);
+Player player(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 20.5f, 0.1f);
 
 void loadTexture(const char *filename, unsigned int *texture);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
@@ -130,9 +130,6 @@ int main() {
    
     // MOVEMENT ------------------------------------------------------------------
 
-    // Creates the camera
-    glm::vec3 playerChunkPos = player.getPosition()/((float)CHUNCK_SIZE);
-
     // Sets mouse callback function for camera direction update
     glfwSetCursorPosCallback(window, mouse_callback);
 
@@ -169,7 +166,11 @@ int main() {
         std::cerr << "Error loading world file\n";
         return -1;
     }
-    
+
+    // keeps track of changes in player's chunk position
+    glm::ivec3 oldChunkPos = player.getChunkPosition();
+    loadActiveChunks(worldFile, activeChunks);
+
     while (!glfwWindowShouldClose(window)) {
 
         // Computing FPS
@@ -181,10 +182,14 @@ int main() {
         // Input and movement
         player.processCameraMovement(window, deltaTime);
         
-        // chunk loading
-        loadActiveChunks(worldFile, activeChunks);
-
-
+        
+        // chunk loading: only loads if chunk position changed
+        if (oldChunkPos != player.getChunkPosition())
+        {
+            loadActiveChunks(worldFile, activeChunks);
+        }
+        oldChunkPos = player.getChunkPosition();
+        
         // color and buffer refresh
         glClearColor(0.1f, 0.5f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

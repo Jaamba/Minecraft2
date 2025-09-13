@@ -10,7 +10,7 @@ class Player
 {
 private:
     glm::vec3 m_position;
-    glm::vec3 m_chunkPosition;
+    glm::ivec3 m_chunkPosition;
     glm::vec3 m_up;
     glm::vec3 m_front;
     float m_speed;
@@ -26,7 +26,7 @@ public:
     // Utilites get / set functions
     glm::mat4 getView() const;
     glm::vec3 getPosition() const;
-    glm::vec3 getChunkPosition() const;
+    glm::ivec3 getChunkPosition() const;
 
     void cameraMouseCallback(GLFWwindow *window, float xpos, float ypos);
     void processCameraMovement(GLFWwindow *window, float deltaTime);
@@ -125,8 +125,13 @@ void Player::processCameraMovement(GLFWwindow *window, float deltaTime) {
 	}
 }
 
-glm::vec3 Player::getChunkPosition() const {
-    return m_position/((float)CHUNCK_SIZE) + glm::vec3(1/((float)2*CHUNCK_SIZE));
+glm::ivec3 Player::getChunkPosition() const {
+    int chunkPosx, chunkPosy, chunkPosz;
+    glm::vec3 floatchunkpos = m_position/((float)CHUNCK_SIZE) + glm::vec3(1/((float)2*CHUNCK_SIZE));
+    chunkPosx = floor(floatchunkpos.x);
+    chunkPosy = floor(floatchunkpos.y);
+    chunkPosz = floor(floatchunkpos.z);
+    return glm::ivec3(chunkPosx, chunkPosy, chunkPosz);
 }
 
 #endif
