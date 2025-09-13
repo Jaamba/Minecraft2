@@ -5,7 +5,10 @@
 #define WIDTH 800
 #define HEIGHT 800
 #define SCALE_FACTOR 1
-#define RENDER_DISTANCE 5
+#define RENDER_DISTANCE 3
+#define CHUNCK_SIZE 5
+
+#define PI 4*atan(1)
 
 struct blockType
 {

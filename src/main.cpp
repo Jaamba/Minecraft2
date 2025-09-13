@@ -13,8 +13,8 @@
 #include "chunk.hpp"
 #include "player.hpp"
 #include "gamedata.hpp"
+#include "worldGenerator.hpp"
 
-#define PI 4*atan(1)
 
 // Time global variables
 float deltaTime = 0.0f;
@@ -23,6 +23,9 @@ float currentFrame = 0.0f;
 
 // Player
 Player player(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 5.5f, 0.1f);
+
+// world generator
+WorldGenerator worldGen;
 
 void loadTexture(const char *filename, unsigned int *texture);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
@@ -150,7 +153,6 @@ int main() {
     
     Chunk activeChunks[2*RENDER_DISTANCE + 1][2*RENDER_DISTANCE + 1][2*RENDER_DISTANCE + 1];
 
-
     // MAIN PROGRAM LOOP ----------------------------------------------------------------
 
     // Enables depth test for OpenGL to properly render
@@ -169,7 +171,7 @@ int main() {
         return -1;
     }
 
-    // keeps track of changes in player's chunk position
+    // Loads first chunks
     glm::ivec3 oldChunkPos = player.getChunkPosition();
     loadActiveChunks(worldFile, activeChunks);
 
@@ -348,24 +350,12 @@ void loadActiveChunks(std::fstream &file, Chunk (&activeChunks)[2*RENDER_DISTANC
 
         if (!loadedChunks[i][j][k])
         {
-            // Chunk empty(glm::vec3(
-            //     i - RENDER_DISTANCE + player.getChunkPosition().x,
-            //     j - RENDER_DISTANCE + player.getChunkPosition().y,
-            //     k - RENDER_DISTANCE + player.getChunkPosition().z
-            // ));
-            // empty.fill(getAir());
-            
-            // Chunk for filling non generated space
-            chunk = "1-1-1-0-0-0-2-2-2-1-1-1-0-0-0-2-2-2-1-1-1-0-0-0-2-2-2";
             x = i - RENDER_DISTANCE + player.getChunkPosition().x;
             y = j - RENDER_DISTANCE + player.getChunkPosition().y;
             z = k - RENDER_DISTANCE + player.getChunkPosition().z;
-
-            if (y != 0)
-            {
-                chunk = "2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2";
-            }
             
+            // Generates new chunk
+            chunk = worldGen.genChunk(x, y, z);
 
             // Adds new chunk to loaded chunks
             Chunk newChunk(x, y, z, chunk);

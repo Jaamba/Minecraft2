@@ -1,7 +1,6 @@
 #ifndef CHUNCK
 #define CHUNCK
 
-#define CHUNCK_SIZE 3
 
 #include <iostream>
 #include <stdexcept>
