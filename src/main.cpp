@@ -10,7 +10,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#include "chunk.h"
+#include "chunk.hpp"
 #include "player.hpp"
 #include "gamedata.hpp"
 
@@ -22,7 +22,7 @@ float lastFrame = 0.0f;
 float currentFrame = 0.0f;
 
 // Player
-Player player(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 20.5f, 0.1f);
+Player player(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 5.5f, 0.1f);
 
 void loadTexture(const char *filename, unsigned int *texture);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
