@@ -18,7 +18,7 @@
 // window size (not resizable)
 #define WIDTH 800
 #define HEIGHT 800
-#define SCALE_FACTOR 0.5
+#define SCALE_FACTOR 1
 
 #define RENDER_DISTANCE 2
 
@@ -246,7 +246,7 @@ int main() {
 
     // view and projection matrices
     glm::mat4 view = player.getView();
-    glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float) WIDTH / HEIGHT, 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WIDTH / HEIGHT, 0.1f, 100.0f);
     
     while (!glfwWindowShouldClose(window)) {
 
@@ -269,57 +269,51 @@ int main() {
         baseShader.Activate();
 
         // Chunk rendering
-        for (int cx = -RENDER_DISTANCE; cx <= RENDER_DISTANCE; cx++)
-        {
-            for (int cy = -RENDER_DISTANCE; cy <= RENDER_DISTANCE; cy++)
-            {
-                for (int cz = -RENDER_DISTANCE; cz <= RENDER_DISTANCE; cz++)
-                {
-                    Chunk activeChunk = activeChunks[cx + RENDER_DISTANCE][cy + RENDER_DISTANCE][cz + RENDER_DISTANCE];
-                    
-                    // Render single blocks
-                    for (int i = 0; i < CHUNCK_SIZE; i++)
-                    {
-                        for (int j = 0; j < CHUNCK_SIZE; j++)
-                        {
-                            for (int k = 0; k < CHUNCK_SIZE; k++)
-                            {
-                                blockType activeBlock = activeChunk.getBlock(i, j, k);
+        int limit = 2*RENDER_DISTANCE + 1;  // numero di valori per asse
+        for (int n = 0; n < limit * limit * limit; n++) {
+            int cx = (n / (limit * limit)) - RENDER_DISTANCE;
+            int cy = ((n / limit) % limit )- RENDER_DISTANCE;
+            int cz = (n % limit) - RENDER_DISTANCE;
+            
+            Chunk activeChunk = activeChunks[cx + RENDER_DISTANCE][cy + RENDER_DISTANCE][cz + RENDER_DISTANCE];
+            
+            for (int m = 0; m < CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; m++) {
+                int i = m / (CHUNCK_SIZE * CHUNCK_SIZE);
+                int j = (m / CHUNCK_SIZE) % CHUNCK_SIZE;
+                int k = m % CHUNCK_SIZE;
 
-                                // Ignores air rendering
-                                if(activeBlock.isAir) continue;
+                blockType activeBlock = activeChunk.getBlock(i, j, k);
 
-                                // Translates model to bottom left corner of chunk
-                                glm::mat4 model(1.0f);
-                                model = glm::translate(model, (float)CHUNCK_SIZE*activeChunk.getChunkPos() + glm::vec3(i, j, k));
+                // Ignores air rendering
+                if(activeBlock.isAir) continue;
 
-                                // Sets view to look at active chunk
-                                view = player.getView();
+                // Translates model to bottom left corner of chunk
+                glm::mat4 model(1.0f);
+                model = glm::scale(model, glm::vec3(SCALE_FACTOR));
+                model = glm::translate(model, (float)CHUNCK_SIZE*activeChunk.getChunkPos() + glm::vec3(i, j, k));
 
-                                // Assigns matrices values to shaders
-                                glUniformMatrix4fv(baseModelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		                        glUniformMatrix4fv(baseViewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		                        glUniformMatrix4fv(baseProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-                                
-                                // Binds block texture
-                                glBindTexture(GL_TEXTURE_2D, textures[activeBlock.ID]);
+                // Sets view to look at active chunk
+                view = player.getView();
 
-                                // Binds dynamic VAO if the block has gravity
-                                if (activeBlock.hasGravity) {
-                                    glBindVertexArray(VAO[1]);
-                                }
-                                else {
-                                    glBindVertexArray(VAO[0]);
-                                }
+                // Assigns matrices values to shaders
+                glUniformMatrix4fv(baseModelLoc, 1, GL_FALSE, glm::value_ptr(model));
+                glUniformMatrix4fv(baseViewLoc, 1, GL_FALSE, glm::value_ptr(view));
+                glUniformMatrix4fv(baseProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+                
+                // Binds block texture
+                glBindTexture(GL_TEXTURE_2D, textures[activeBlock.ID]);
 
-
-                                // Renders the block
-                                //std::cout << "drawing block...\n";
-                                glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-                            }
-                        }
-                    }
+                // Binds dynamic VAO if the block has gravity
+                if (activeBlock.hasGravity) {
+                    glBindVertexArray(VAO[1]);
                 }
+                else {
+                    glBindVertexArray(VAO[0]);
+                }
+
+                // Renders the block
+                //std::cout << "drawing block...\n";
+                glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
             }
         }
 
