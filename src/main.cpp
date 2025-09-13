@@ -11,90 +11,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "chunk.h"
-#include "camera.hpp"
+#include "player.hpp"
+#include "gamedata.hpp"
 
 #define PI 4*atan(1)
-
-// window size (not resizable)
-#define WIDTH 800
-#define HEIGHT 800
-#define SCALE_FACTOR 1
-
-#define RENDER_DISTANCE 2
-
-/* Struttura del file mondo
-xyzid xyzid xyzid ...
-000id 001id 002id ...
-
-funzione loadActiveChunks(&activechunks, position, file)
-*/
-
-/*
-    Idea: Un chunk è un array tridimensionale di block_type.
-    ad ogni frame si itera tra gli elementi del chunk e si renderizza il 
-    blocco con una funzione render_block(chunk c, int i, int j).
-    In questo modo avviene la parte di rendering.
-    Per la parte fisica si itera tra i blocchi aggiornando il blocco corrente
-    e i blocchi circostanti in base all'id del block_type. Se per esempio
-    blocco.id == "sabbia" si aggiorna la posizione del blocco in modo tale
-    da farlo cadere. 
-*/
-
-/* BLOCK TYPE LIST ---------------------------------------------------------------------- */
-//                       ID       isAir       hasGravity
-blockType b_dirt      = {0,       false,      false};
-blockType b_stone     = {1,       false,      false};
-blockType b_air       = {2,       true,       false};
-
-/* TEXTURE ID FILENAME LIST --------------------------------------------------------------*/
-struct idTexture
-{
-    unsigned int ID;
-    const char* filename;
-};
-
-idTexture t_texturesIDs[] =
-{
-    /* 0 - dirt */  {0, "../textures/0_dirt.jpg"},
-    /* 1 - stone */ {1, "../textures/1_stone.jpg"}
-};
-
-// Block geometry info
-float b_vertices[] = {
-    // position           // UV
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 0
-     0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // 1
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 2
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // 3
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 4
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // 5
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 6
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // 7
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 8
-    -0.5f,  0.5f, -0.5f,  1.0f, 0.0f, // 9
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 10
-    -0.5f, -0.5f,  0.5f,  0.0f, 1.0f, // 11
-     0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 12
-     0.5f,  0.5f, -0.5f,  1.0f, 0.0f, // 13
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 14
-     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, // 15
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 16
-     0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // 17
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, // 18
-    -0.5f, -0.5f,  0.5f,  0.0f, 1.0f, // 19
-    -0.5f,  0.5f, -0.5f,  0.0f, 0.0f, // 20
-     0.5f,  0.5f, -0.5f,  1.0f, 0.0f, // 21
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 22
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f  // 23
-};
-unsigned int b_indices[] = {
-    0, 1, 2,  2, 3, 0,
-    4, 5, 6,  6, 7, 4,
-    8, 9,10, 10,11, 8,
-    12,13,14, 14,15,12,
-    16,17,18, 18,19,16,
-    20,21,22, 22,23,20
-};
 
 // Time global variables
 float deltaTime = 0.0f;
@@ -102,11 +22,11 @@ float lastFrame = 0.0f;
 float currentFrame = 0.0f;
 
 // Player
-Camera player(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 2.5f, 0.1f);
+Player player(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 2.5f, 0.1f);
 
 void loadTexture(const char *filename, unsigned int *texture);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
-void loadActiveChunks(const char *filename, Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]);
+void loadActiveChunks(std::ifstream &file, Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]);
 
 int main() {
     std::cout << "hello minecraft 2\n";
@@ -240,6 +160,15 @@ int main() {
     // view and projection matrices
     glm::mat4 view = player.getView();
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WIDTH / HEIGHT, 0.1f, 100.0f);
+
+    // opens world file
+    std::ifstream worldFile("../world.dat");
+
+    // Cheks if file exists
+    if (!worldFile) {
+        std::cerr << "Error loading world file\n";
+        return -1;
+    }
     
     while (!glfwWindowShouldClose(window)) {
 
@@ -251,10 +180,9 @@ int main() {
         
         // Input and movement
         player.processCameraMovement(window, deltaTime);
-        playerChunkPos = player.getPosition()/((float)CHUNCK_SIZE) + glm::vec3(1/((float)2*CHUNCK_SIZE));
         
         // chunk loading
-        loadActiveChunks("../world.dat", activeChunks);
+        loadActiveChunks(worldFile, activeChunks);
 
 
         // color and buffer refresh
@@ -320,6 +248,13 @@ int main() {
     }
 
     // Terminates the program
+    worldFile.close();
+
+    glDeleteVertexArrays(2, VAO);
+	glDeleteBuffers(2, VBO);
+	glDeleteBuffers(2, EBO);
+	baseShader.Delete();
+
     glfwDestroyWindow(window);
     glfwTerminate();
 }
@@ -360,22 +295,18 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
 }
 
 // Reads chunks from a file and loads them to activechunks
-void loadActiveChunks(const char *filename, Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]) {
-    std::ifstream file(filename);
+void loadActiveChunks(std::ifstream &file, Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]) {
 
-    // Cheks if file exists
-    if (!file) {
-        std::cerr << "Error loading world file\n";
-        return;
-    }
+    // Resets file stream
+    file.clear();
+    file.seekg(0, std::ios::beg);  // Comes back to beginning of file
 
     // x, y and z of the bottom left corner of the chunks to load
     int tx, ty, tz;
-    glm::vec3 playerChunkPos = player.getPosition() / ((float)CHUNCK_SIZE) + glm::vec3(1/((float)2*CHUNCK_SIZE));
     
-    tx = floor(playerChunkPos.x - RENDER_DISTANCE);
-    ty = floor(playerChunkPos.y - RENDER_DISTANCE);
-    tz = floor(playerChunkPos.z - RENDER_DISTANCE);
+    tx = floor(player.getChunkPosition().x - RENDER_DISTANCE);
+    ty = floor(player.getChunkPosition().y - RENDER_DISTANCE);
+    tz = floor(player.getChunkPosition().z - RENDER_DISTANCE);
 
     // keeps track of loaded chunks
     bool loadedChunks[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1] = {};
@@ -400,7 +331,6 @@ void loadActiveChunks(const char *filename, Chunk (&activeChunks)[2*RENDER_DISTA
                         [z - tz] = true;
         }
     }
-    file.close();
 
     // Handles chunks not present in file
     int limit = 2*RENDER_DISTANCE + 1;
@@ -412,9 +342,9 @@ void loadActiveChunks(const char *filename, Chunk (&activeChunks)[2*RENDER_DISTA
         if (!loadedChunks[i][j][k])
         {
             Chunk empty(glm::vec3(
-                i - RENDER_DISTANCE + playerChunkPos.x,
-                j - RENDER_DISTANCE + playerChunkPos.y,
-                k - RENDER_DISTANCE + playerChunkPos.z
+                i - RENDER_DISTANCE + player.getChunkPosition().x,
+                j - RENDER_DISTANCE + player.getChunkPosition().y,
+                k - RENDER_DISTANCE + player.getChunkPosition().z
             ));
             empty.fill(b_air);
 

@@ -1,15 +1,16 @@
-#ifndef CAMERA
-#define CAMERA
+#ifndef PLAYER
+#define PLAYER
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-class Camera
+class Player
 {
 private:
     glm::vec3 m_position;
+    glm::vec3 m_chunkPosition;
     glm::vec3 m_up;
     glm::vec3 m_front;
     float m_speed;
@@ -18,18 +19,21 @@ private:
     float m_pitch, m_yaw, m_roll;
     bool m_firstMouse;
 public:
-    Camera();
-    Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, float speed, float sensitivity);
-    virtual ~Camera() = default;
+    Player();
+    Player(glm::vec3 position, glm::vec3 front, glm::vec3 up, float speed, float sensitivity);
+    virtual ~Player() = default;
 
+    // Utilites get / set functions
     glm::mat4 getView() const;
     glm::vec3 getPosition() const;
+    glm::vec3 getChunkPosition() const;
+
     void cameraMouseCallback(GLFWwindow *window, float xpos, float ypos);
     void processCameraMovement(GLFWwindow *window, float deltaTime);
 };
 
 // Generates a camera at (0, 0, 0)
-Camera::Camera()
+Player::Player()
 {
     m_position = glm::vec3(0, 0, 0);
     m_up = glm::vec3(0, 1, 0);
@@ -43,7 +47,7 @@ Camera::Camera()
 }
 
 // Generates a camera at a given position and orientation
-Camera::Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, float speed, float sensitivity)
+Player::Player(glm::vec3 position, glm::vec3 front, glm::vec3 up, float speed, float sensitivity)
 {
     m_position = position;
     m_front = front;
@@ -58,17 +62,17 @@ Camera::Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, float speed, f
 }
 
 // Returns camera's view matrix
-glm::mat4 Camera::getView() const {
+glm::mat4 Player::getView() const {
     return glm::lookAt(m_position, m_position + m_front, m_up);
 }
 
-// Returns camera's position
-glm::vec3 Camera::getPosition() const {
+// Returns player's position
+glm::vec3 Player::getPosition() const {
     return m_position;
 }
 
 // Updates camera's orientation based on mouse position on window
-void Camera::cameraMouseCallback(GLFWwindow *window, float xpos, float ypos) {
+void Player::cameraMouseCallback(GLFWwindow *window, float xpos, float ypos) {
     
     // Cheks if mouse entered the window for the first time
     if (m_firstMouse)
@@ -106,7 +110,7 @@ void Camera::cameraMouseCallback(GLFWwindow *window, float xpos, float ypos) {
 }
 
 // Updates camera's position based on WASD keys and speed
-void Camera::processCameraMovement(GLFWwindow *window, float deltaTime) {
+void Player::processCameraMovement(GLFWwindow *window, float deltaTime) {
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 		m_position += m_speed*deltaTime*m_front;
 	}
@@ -121,5 +125,8 @@ void Camera::processCameraMovement(GLFWwindow *window, float deltaTime) {
 	}
 }
 
+glm::vec3 Player::getChunkPosition() const {
+    return m_position/((float)CHUNCK_SIZE) + glm::vec3(1/((float)2*CHUNCK_SIZE));
+}
 
 #endif

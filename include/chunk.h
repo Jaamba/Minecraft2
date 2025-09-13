@@ -8,13 +8,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-struct blockType
-{
-    unsigned int ID;
-    bool isAir;
-    bool hasGravity;    
-};
+#include "gamedata.hpp"
 
 class Chunk
 {
