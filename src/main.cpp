@@ -27,6 +27,7 @@ Player player(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 5.5f, 0.1f)
 void loadTexture(const char *filename, unsigned int *texture);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void loadActiveChunks(std::ifstream &file, Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]);
+blockType getAir();
 
 int main() {
     std::cout << "hello minecraft 2\n";
@@ -351,9 +352,14 @@ void loadActiveChunks(std::ifstream &file, Chunk (&activeChunks)[2*RENDER_DISTAN
                 j - RENDER_DISTANCE + player.getChunkPosition().y,
                 k - RENDER_DISTANCE + player.getChunkPosition().z
             ));
-            empty.fill(b_air);
+            empty.fill(getAir());
 
             activeChunks[i][j][k] = empty;
         }
     }
+}
+
+blockType getAir() {
+    int n = sizeof(b_blocks)/sizeof(blockType);
+    return b_blocks[n - 1];
 }

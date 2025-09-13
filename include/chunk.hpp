@@ -1,7 +1,7 @@
 #ifndef CHUNCK
 #define CHUNCK
 
-#define CHUNCK_SIZE 4
+#define CHUNCK_SIZE 3
 
 #include <iostream>
 #include <stdexcept>
@@ -41,18 +41,21 @@ Chunk::Chunk() {
 Chunk::Chunk(int x, int y, int z, std::string s) {
     m_x = x; m_y = y; m_z = z;
 
-    // temporary
-    if (s == "0")
-    {
-        fill({0,       false,      false});
-    }
-    if (s == "1")
-    {
-        fill({1,       false,      false});
-    }
-    if (s == "2")
-    {
-        fill({2,       true,      false});
+    std::stringstream ss(s);
+    std::string token;
+    
+    int n = CHUNCK_SIZE*CHUNCK_SIZE*CHUNCK_SIZE;
+    int i = 0;
+    int bx, by, bz;
+    unsigned int blockIds[CHUNCK_SIZE][CHUNCK_SIZE][CHUNCK_SIZE];
+
+    while (std::getline(ss, token, '-') && i < n) {
+        bx = i / (CHUNCK_SIZE * CHUNCK_SIZE);
+        by = (i / CHUNCK_SIZE) % CHUNCK_SIZE;
+        bz = i % CHUNCK_SIZE;
+
+        m_blocks[bx][by][bz] = b_blocks[std::stoi(token)];
+        i++;
     }
 }
 

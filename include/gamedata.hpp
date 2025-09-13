@@ -5,7 +5,6 @@
 #define WIDTH 800
 #define HEIGHT 800
 #define SCALE_FACTOR 1
-
 #define RENDER_DISTANCE 2
 
 struct blockType
@@ -16,10 +15,12 @@ struct blockType
 };
 
 /* BLOCK TYPE LIST ---------------------------------------------------------------------- */
-//                       ID       isAir       hasGravity
-inline blockType b_dirt      = {0,       false,      false};
-inline blockType b_stone     = {1,       false,      false};
-inline blockType b_air       = {2,       true,       false};
+inline blockType b_blocks[] = {
+    //ID      isAir       hasGravity
+    {0,       false,      false},   // dirt
+    {1,       false,      false},   // stone
+    {2,       true,       false}    // air
+};
 
 /* TEXTURE ID FILENAME LIST --------------------------------------------------------------*/
 struct idTexture
