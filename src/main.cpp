@@ -20,7 +20,7 @@
 #define HEIGHT 800
 #define SCALE_FACTOR 1
 
-#define RENDER_DISTANCE 4
+#define RENDER_DISTANCE 2
 
 /* Struttura del file mondo
 xyzid xyzid xyzid ...
@@ -251,8 +251,7 @@ int main() {
         
         // Input and movement
         player.processCameraMovement(window, deltaTime);
-        playerChunkPos = player.getPosition()/((float)CHUNCK_SIZE);
-        
+        playerChunkPos = player.getPosition()/((float)CHUNCK_SIZE) + glm::vec3(1/((float)2*CHUNCK_SIZE));
         
         // chunk loading
         loadActiveChunks("../world.dat", activeChunks);
@@ -372,10 +371,11 @@ void loadActiveChunks(const char *filename, Chunk (&activeChunks)[2*RENDER_DISTA
 
     // x, y and z of the bottom left corner of the chunks to load
     int tx, ty, tz;
-    glm::vec3 playerChunkPos = player.getPosition() / ((float)CHUNCK_SIZE);
-    tx = round(playerChunkPos.x - RENDER_DISTANCE);
-    ty = round(playerChunkPos.y - RENDER_DISTANCE);
-    tz = round(playerChunkPos.z - RENDER_DISTANCE);
+    glm::vec3 playerChunkPos = player.getPosition() / ((float)CHUNCK_SIZE) + glm::vec3(1/((float)2*CHUNCK_SIZE));
+    
+    tx = floor(playerChunkPos.x - RENDER_DISTANCE);
+    ty = floor(playerChunkPos.y - RENDER_DISTANCE);
+    tz = floor(playerChunkPos.z - RENDER_DISTANCE);
 
     // keeps track of loaded chunks
     bool loadedChunks[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1] = {};
