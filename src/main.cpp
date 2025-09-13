@@ -26,7 +26,8 @@ Player player(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 5.5f, 0.1f)
 
 void loadTexture(const char *filename, unsigned int *texture);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
-void loadActiveChunks(std::ifstream &file, Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]);
+void loadActiveChunks(std::fstream &file, Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]);
+void generateChunks(std::string seed, std::fstream &file, glm::ivec3 pos);
 blockType getAir();
 
 int main() {
@@ -160,7 +161,7 @@ int main() {
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WIDTH / HEIGHT, 0.1f, 100.0f);
 
     // opens world file
-    std::ifstream worldFile("../world.dat");
+    std::fstream worldFile("../world.dat", std::ios::in | std::ios::out | std::ios::app);
 
     // Cheks if file exists
     if (!worldFile) {
@@ -301,7 +302,7 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
 }
 
 // Reads chunks from a file and loads them to activechunks
-void loadActiveChunks(std::ifstream &file, Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]) {
+void loadActiveChunks(std::fstream &file, Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]) {
 
     // Resets file stream
     file.clear();
@@ -347,14 +348,31 @@ void loadActiveChunks(std::ifstream &file, Chunk (&activeChunks)[2*RENDER_DISTAN
 
         if (!loadedChunks[i][j][k])
         {
-            Chunk empty(glm::vec3(
-                i - RENDER_DISTANCE + player.getChunkPosition().x,
-                j - RENDER_DISTANCE + player.getChunkPosition().y,
-                k - RENDER_DISTANCE + player.getChunkPosition().z
-            ));
-            empty.fill(getAir());
+            // Chunk empty(glm::vec3(
+            //     i - RENDER_DISTANCE + player.getChunkPosition().x,
+            //     j - RENDER_DISTANCE + player.getChunkPosition().y,
+            //     k - RENDER_DISTANCE + player.getChunkPosition().z
+            // ));
+            // empty.fill(getAir());
+            
+            // Chunk for filling non generated space
+            chunk = "1-1-1-0-0-0-2-2-2-1-1-1-0-0-0-2-2-2-1-1-1-0-0-0-2-2-2";
+            x = i - RENDER_DISTANCE + player.getChunkPosition().x;
+            y = j - RENDER_DISTANCE + player.getChunkPosition().y;
+            z = k - RENDER_DISTANCE + player.getChunkPosition().z;
 
-            activeChunks[i][j][k] = empty;
+            if (y != 0)
+            {
+                chunk = "2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2-2";
+            }
+            
+
+            // Adds new chunk to loaded chunks
+            Chunk newChunk(x, y, z, chunk);
+            activeChunks[i][j][k] = newChunk;
+
+            file.clear();
+            file << " " << x << " " << y << " " << z << " " << chunk;
         }
     }
 }

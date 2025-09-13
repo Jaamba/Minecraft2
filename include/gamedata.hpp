@@ -5,7 +5,7 @@
 #define WIDTH 800
 #define HEIGHT 800
 #define SCALE_FACTOR 1
-#define RENDER_DISTANCE 2
+#define RENDER_DISTANCE 5
 
 struct blockType
 {
