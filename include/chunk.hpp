@@ -21,24 +21,32 @@ private:
     // Position of the chunk 
     int m_x, m_y, m_z;
     // Array of block types in the chunk
-    BlockGrid m_blockGrid;
+    BlockGrid* m_blockGrid;
+    // Vector containing all the vertices of the blocks
+    std::vector<float> m_vertices;
 
 public:
-    // Creates empty chunk at given chunk coordinates
     Chunk();
     Chunk(glm::ivec3 pos, BlockGrid blocks);
-    virtual ~Chunk() = default;
+    Chunk(const Chunk& other);
+    Chunk& operator=(const Chunk& other);
+    virtual ~Chunk();
 
     // block get/set utilites
     blockType getBlock(int x, int y, int z) const;
     void setBlock(blockType type, int x, int y, int z);
     glm::ivec3 getChunkPos() const;
 
+    // gets blocks verices and texture coordinates
+    const std::vector<float>& getChunkVertices() const;
+
     // chunk generation
     void fill(blockType type);
 };
 
 Chunk::Chunk() {
+    // Creates the chunk's memory on the heap
+    m_blockGrid = new BlockGrid;
 }
 
 Chunk::Chunk(glm::ivec3 pos, BlockGrid blocks) {
@@ -46,39 +54,38 @@ Chunk::Chunk(glm::ivec3 pos, BlockGrid blocks) {
     m_x = pos.x; m_y = pos.y; m_z = pos.z;
 
     // Creates the chunk's memory on the heap
-    m_blockGrid = blocks;
+    m_blockGrid = new BlockGrid;
+    *m_blockGrid = blocks;
 }
 
-// Copy constructor
-// Chunk::Chunk(const Chunk& other) {
-//     m_x = other.m_x;
-//     m_y = other.m_y;
-//     m_z = other.m_z;
+Chunk::Chunk(const Chunk& other) {
+    m_x = other.m_x;
+    m_y = other.m_y;
+    m_z = other.m_z;
 
-//     m_blockGrid = new BlockGrid;
-//     *m_blockGrid = *other.m_blockGrid;
-// }
+    m_blockGrid = new BlockGrid;
+    *m_blockGrid = *other.m_blockGrid;
+}
 
-// Copy assignment operator
-// Chunk& Chunk::operator=(const Chunk& other) {
-//     if (this != &other) { 
-//         m_x = other.m_x;
-//         m_y = other.m_y;
-//         m_z = other.m_z;
+Chunk& Chunk::operator=(const Chunk& other) {
+    if (this != &other) { 
+        m_x = other.m_x;
+        m_y = other.m_y;
+        m_z = other.m_z;
 
-//         // Frees old memory
-//         delete m_blockGrid;
+        // Frees old memory
+        delete m_blockGrid;
 
-//         // reallocates and copies new memory
-//         m_blockGrid = new BlockGrid;
-//         *m_blockGrid = *other.m_blockGrid;
-//     }
-//     return *this;
-// }
+        // reallocates and copies new memory
+        m_blockGrid = new BlockGrid;
+        *m_blockGrid = *other.m_blockGrid;
+    }
+    return *this;
+}
 
-// Chunk::~Chunk() {
-//     delete m_blockGrid;
-// }
+Chunk::~Chunk() {
+    delete m_blockGrid;
+}
 
 // Returns a block at a given position
 blockType Chunk::getBlock(int x, int y, int z) const {
@@ -86,7 +93,7 @@ blockType Chunk::getBlock(int x, int y, int z) const {
         std::cerr << "Error: getBlock index cannot be larger than chunk size\n";
     }
 
-    return m_blockGrid.blocks[x][y][z];
+    return m_blockGrid->blocks[x][y][z];
 }
 
 // Sets a block at a given position
@@ -95,7 +102,7 @@ void Chunk::setBlock(blockType type, int x, int y, int z) {
         std::cerr << "Error: setBlock index cannot be larger than chunk size\n";
     }
 
-    m_blockGrid.blocks[x][y][z] = type;
+    m_blockGrid->blocks[x][y][z] = type;
 }
 
 // Fills the chunk with one blocktype

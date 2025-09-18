@@ -209,6 +209,9 @@ int main() {
         // Activates shader (for now all blocks have the same one)
         baseShader.Activate();
 
+        // Sets view matrix
+        view = player.getView();
+
         // Chunk rendering
         int limit = 2*RENDER_DISTANCE + 1; 
         for (int n = 0; n < limit * limit * limit; n++) {
@@ -232,9 +235,6 @@ int main() {
                 glm::mat4 model(1.0f);
                 model = glm::scale(model, glm::vec3(SCALE_FACTOR));
                 model = glm::translate(model, (glm::vec3)(CHUNCK_SIZE*activeChunk.getChunkPos()) + glm::vec3(i, j, k));
-
-                // Sets view to look at active chunk
-                view = player.getView();
 
                 // Assigns matrices values to shaders
                 glUniformMatrix4fv(baseModelLoc, 1, GL_FALSE, glm::value_ptr(model));
