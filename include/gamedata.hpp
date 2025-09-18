@@ -8,6 +8,9 @@
 #define RENDER_DISTANCE 3
 #define CHUNCK_SIZE 5
 
+// for debug
+#define DEBUG
+
 #define PI 4*atan(1)
 
 struct blockType

@@ -17,7 +17,6 @@
 #include "worldGenerator.hpp"
 #include "loader.hpp"
 
-#define DEBUG
 
 // Time global variables
 float deltaTime = 0.0f;
@@ -25,7 +24,7 @@ float lastFrame = 0.0f;
 float currentFrame = 0.0f;
 
 // Player
-Player player(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 5.5f, 0.1f);
+Player player(glm::vec3(0,0,0), glm::vec3(0,0,-1), glm::vec3(0,1,0), 20.5f, 0.1f);
 
 // world generator
 WorldGenerator worldGen;
@@ -211,7 +210,7 @@ int main() {
         baseShader.Activate();
 
         // Chunk rendering
-        int limit = 2*RENDER_DISTANCE + 1;  // numero di valori per asse
+        int limit = 2*RENDER_DISTANCE + 1; 
         for (int n = 0; n < limit * limit * limit; n++) {
             int cx = (n / (limit * limit)) - RENDER_DISTANCE;
             int cy = ((n / limit) % limit )- RENDER_DISTANCE;
@@ -232,7 +231,7 @@ int main() {
                 // Translates model to bottom left corner of chunk
                 glm::mat4 model(1.0f);
                 model = glm::scale(model, glm::vec3(SCALE_FACTOR));
-                //model = glm::translate(model, (float)CHUNCK_SIZE*activeChunk.getChunkPos() + glm::vec3(i, j, k));
+                model = glm::translate(model, (glm::vec3)(CHUNCK_SIZE*activeChunk.getChunkPos()) + glm::vec3(i, j, k));
 
                 // Sets view to look at active chunk
                 view = player.getView();

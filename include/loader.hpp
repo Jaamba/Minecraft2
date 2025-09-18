@@ -102,6 +102,11 @@ inline void loadActiveChunks(Player &player, WorldGenerator &generator, std::fst
 
 // Called on launch: Loads the chunk index
 inline void buildChunkIndex(std::fstream &file) {
+    #ifdef DEBUG
+    std::cout << "Loading world index...\n";
+    int n = 0;
+    #endif
+    
     // Resets file stream
     file.clear();
     file.seekg(0, std::ios::beg);
@@ -115,13 +120,20 @@ inline void buildChunkIndex(std::fstream &file) {
         file.read(reinterpret_cast<char*>(&header), sizeof(header));
 
         // stops if the end of the file has been reached
-        if (!file) break;
+        if (!file) {
+            #ifdef DEBUG
+            std::cout << "Loaded world index: " << n << " chunks loaded successfully\n";
+            #endif
+
+            break;
+        }
 
         // Skips to next chunk
         file.seekg(header.size, std::ios::cur);
 
         // Saves the current chunk in the index
         chunkIndex[{header.x, header.y, header.z}] = pos;
+        n++;
     }
 }
 
