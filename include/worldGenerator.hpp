@@ -24,7 +24,7 @@ public:
     virtual ~WorldGenerator() = default;
 
     // Generates string for chunk at pos (x, y, z)
-    std::string genChunk(int x, int y, int z);
+    BlockGrid genChunk(int x, int y, int z);
 };
 
 WorldGenerator::WorldGenerator() {
@@ -34,7 +34,7 @@ WorldGenerator::WorldGenerator(int seed) {
     m_seed = seed;
 }
 
-std::string WorldGenerator::genChunk(int x, int y, int z) {
+BlockGrid WorldGenerator::genChunk(int x, int y, int z) {
     // Idea: for each (x, y) in chunk's area, we compute a perlin value t(x, y)
     // for each block, if z > t(x, y) the block will be air, other wise it will
     // be grass or rock. For now, we assume gridSize = chunk_size. 
@@ -49,8 +49,8 @@ std::string WorldGenerator::genChunk(int x, int y, int z) {
         }
     }
 
-    // Writes final string
-    std::string chunk = "";
+    // Writes final chunk
+    BlockGrid chunk;
     for (int i = 0; i < CHUNCK_SIZE; i++)
     {
         for (int j = 0; j < CHUNCK_SIZE; j++)
@@ -60,20 +60,18 @@ std::string WorldGenerator::genChunk(int x, int y, int z) {
                 // Cheks if block is above or below ground
                 if (y*CHUNCK_SIZE + j < ceil(perlinValues[i][k]) - 2)
                 {
-                    chunk += "1-";
+                    chunk.blocks[i][j][k] = b_blocks[1];
                 }
                 else if (y*CHUNCK_SIZE + j < ceil(perlinValues[i][k]))
                 {
-                    chunk += "0-";
+                    chunk.blocks[i][j][k] = b_blocks[0];
                 }
                 else {
-                    chunk += "2-";
+                    chunk.blocks[i][j][k] = b_blocks[2];
                 }
             }
         }
     }
-    // removes extra "-"
-    chunk.pop_back();
     
     return chunk;
 }

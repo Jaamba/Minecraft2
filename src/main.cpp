@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <unordered_map>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -14,7 +15,9 @@
 #include "player.hpp"
 #include "gamedata.hpp"
 #include "worldGenerator.hpp"
+#include "loader.hpp"
 
+#define DEBUG
 
 // Time global variables
 float deltaTime = 0.0f;
@@ -29,7 +32,6 @@ WorldGenerator worldGen;
 
 void loadTexture(const char *filename, unsigned int *texture);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
-void loadActiveChunks(std::fstream &file, Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]);
 void generateChunks(std::string seed, std::fstream &file, glm::ivec3 pos);
 blockType getAir();
 
@@ -150,7 +152,7 @@ int main() {
 
 
     // CHUNKS CREATION ------------------------------------------------------------------
-    
+   
     Chunk activeChunks[2*RENDER_DISTANCE + 1][2*RENDER_DISTANCE + 1][2*RENDER_DISTANCE + 1];
 
     // MAIN PROGRAM LOOP ----------------------------------------------------------------
@@ -171,9 +173,16 @@ int main() {
         return -1;
     }
 
+    // Creates chunk index hash
+    wl::buildChunkIndex(worldFile);
+
     // Loads first chunks
     glm::ivec3 oldChunkPos = player.getChunkPosition();
-    loadActiveChunks(worldFile, activeChunks);
+    wl::loadActiveChunks(player, worldGen, worldFile, activeChunks);
+
+    #ifdef DEBUG
+    std::vector<float> times;
+    #endif
 
     while (!glfwWindowShouldClose(window)) {
 
@@ -190,7 +199,7 @@ int main() {
         // chunk loading: only loads if chunk position changed
         if (oldChunkPos != player.getChunkPosition())
         {
-            loadActiveChunks(worldFile, activeChunks);
+            wl::loadActiveChunks(player, worldGen, worldFile, activeChunks);
         }
         oldChunkPos = player.getChunkPosition();
         
@@ -223,7 +232,7 @@ int main() {
                 // Translates model to bottom left corner of chunk
                 glm::mat4 model(1.0f);
                 model = glm::scale(model, glm::vec3(SCALE_FACTOR));
-                model = glm::translate(model, (float)CHUNCK_SIZE*activeChunk.getChunkPos() + glm::vec3(i, j, k));
+                //model = glm::translate(model, (float)CHUNCK_SIZE*activeChunk.getChunkPos() + glm::vec3(i, j, k));
 
                 // Sets view to look at active chunk
                 view = player.getView();
@@ -254,7 +263,20 @@ int main() {
         // Buffers swap and events
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        #ifdef DEBUG
+        times.push_back(deltaTime);
+        #endif
     }
+
+    #ifdef DEBUG
+    float sum;
+    for (int i = 0; i < times.size(); i++)
+    {
+        sum += times[i];
+    }
+    std::cout << "DEBUG: Average frame time: " << sum/times.size() << std::endl;
+    #endif
 
     // Terminates the program
     worldFile.close();
@@ -268,6 +290,7 @@ int main() {
     glfwTerminate();
 }
 
+// Loads an OpenGL texture from a file
 void loadTexture(const char *filename, unsigned int *texture) {
     // Creates and binds the OpenGL object
     glGenTextures(1, texture);
@@ -299,72 +322,9 @@ void loadTexture(const char *filename, unsigned int *texture) {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+// mouse callback for camera movement
 void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     player.cameraMouseCallback(window, xpos, ypos);
-}
-
-// Reads chunks from a file and loads them to activechunks
-void loadActiveChunks(std::fstream &file, Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]) {
-
-    // Resets file stream
-    file.clear();
-    file.seekg(0, std::ios::beg);  // Comes back to beginning of file
-
-    // x, y and z of the bottom left corner of the chunks to load
-    int tx, ty, tz;
-    
-    tx = floor(player.getChunkPosition().x - RENDER_DISTANCE);
-    ty = floor(player.getChunkPosition().y - RENDER_DISTANCE);
-    tz = floor(player.getChunkPosition().z - RENDER_DISTANCE);
-
-    // keeps track of loaded chunks
-    bool loadedChunks[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1] = {};
-
-    // Current x, y and z
-    int x, y, z;
-    std::string chunk;
-    while (file >> x >> y >> z >> chunk)
-    {
-        // Checks if chunk to be loaded has been found
-        if ((x >= tx && x <= tx + 2*RENDER_DISTANCE) && 
-            (y >= ty && y <= ty + 2*RENDER_DISTANCE) && 
-            (z >= tz && z <= tz + 2*RENDER_DISTANCE))
-        {
-            Chunk tmp(x,y,z,chunk);
-            activeChunks[x - tx]
-                        [y - ty]
-                        [z - tz] = tmp;
-
-            loadedChunks[x - tx]
-                        [y - ty]
-                        [z - tz] = true;
-        }
-    }
-
-    // Handles chunks not present in file
-    int limit = 2*RENDER_DISTANCE + 1;
-    for (int m = 0; m < limit * limit * limit; m++) {
-        int i = m / (limit * limit);
-        int j = (m / limit) % limit;
-        int k = m % limit;
-
-        if (!loadedChunks[i][j][k])
-        {
-            x = i - RENDER_DISTANCE + player.getChunkPosition().x;
-            y = j - RENDER_DISTANCE + player.getChunkPosition().y;
-            z = k - RENDER_DISTANCE + player.getChunkPosition().z;
-            
-            // Generates new chunk
-            chunk = worldGen.genChunk(x, y, z);
-
-            // Adds new chunk to loaded chunks
-            Chunk newChunk(x, y, z, chunk);
-            activeChunks[i][j][k] = newChunk;
-
-            file.clear();
-            file << " " << x << " " << y << " " << z << " " << chunk;
-        }
-    }
 }
 
 blockType getAir() {
