@@ -15,6 +15,15 @@ struct BlockGrid {
     blockType blocks[CHUNCK_SIZE][CHUNCK_SIZE][CHUNCK_SIZE];
 };
 
+enum FaceDir {
+    FRONT,
+    BACK,
+    LEFT,
+    RIGHT,
+    TOP,
+    BOTTOM
+};
+
 class Chunk
 {
 private:
@@ -22,8 +31,17 @@ private:
     int m_x, m_y, m_z;
     // Array of block types in the chunk
     BlockGrid* m_blockGrid;
-    // Vector containing all the vertices of the blocks
+    // Vector containing all the vertices and indices of the blocks
     std::vector<float> m_vertices;
+    std::vector<unsigned int> m_indices;
+
+    // function to add a block to m_vertices
+    // Position is relative to chunk position
+    void addBlockVertices(glm::ivec3 pos);
+
+    // Utility function for adding a face to
+    // m_vertices
+    void addFace(glm::ivec3 pos, FaceDir direction);
 
 public:
     Chunk();
@@ -56,6 +74,16 @@ Chunk::Chunk(glm::ivec3 pos, BlockGrid blocks) {
     // Creates the chunk's memory on the heap
     m_blockGrid = new BlockGrid;
     *m_blockGrid = blocks;
+
+    // Adds blocks' vertices
+    for (int i = 0; i < CHUNCK_SIZE; i++) {
+        for (int j = 0; j < CHUNCK_SIZE; j++) {
+            for (int k = 0; k < CHUNCK_SIZE; k++) {
+                addBlockVertices(pos + glm::ivec3(i, j, k));                
+            }
+        }
+    }
+    
 }
 
 Chunk::Chunk(const Chunk& other) {
@@ -122,6 +150,90 @@ void Chunk::fill(blockType type) {
 // Returns chunk's position
 glm::ivec3 Chunk::getChunkPos() const{
     return glm::ivec3(m_x, m_y, m_z);
+}
+
+void Chunk::addBlockVertices(glm::ivec3 pos) {
+    // Checks if pos is not valid
+    if (pos.x >= CHUNCK_SIZE || pos.y >= CHUNCK_SIZE || pos.z >= CHUNCK_SIZE) {
+        throw "Error in addblockvertices: pos is larger than chunksize";
+    }
+    
+    // Adds all faces
+    for (int i = 0; i < 6; i++)
+    {
+        // Adds the face
+        addFace(pos, static_cast<FaceDir>(i));
+    }
+}
+
+void Chunk::addFace(glm::ivec3 pos, FaceDir direction) {
+    // How many vertices have already been made
+    int startIndex = m_vertices.size() / 3;
+    int x, y, z;
+    x = pos.x, y = pos.y, z = pos.z;
+
+    // Vertices of the face
+    float v[4][3];
+
+    switch (direction) {
+        case FRONT:
+            v[0][0] = x;   v[0][1] = y;   v[0][2] = z;
+            v[1][0] = x+1; v[1][1] = y;   v[1][2] = z;
+            v[2][0] = x+1; v[2][1] = y+1; v[2][2] = z;
+            v[3][0] = x;   v[3][1] = y+1; v[3][2] = z;
+            break;
+
+        case BACK:
+            v[0][0] = x+1; v[0][1] = y;   v[0][2] = z+1;
+            v[1][0] = x;   v[1][1] = y;   v[1][2] = z+1;
+            v[2][0] = x;   v[2][1] = y+1; v[2][2] = z+1;
+            v[3][0] = x+1; v[3][1] = y+1; v[3][2] = z+1;
+            break;
+
+        case LEFT:
+            v[0][0] = x; v[0][1] = y;   v[0][2] = z+1;
+            v[1][0] = x; v[1][1] = y;   v[1][2] = z;
+            v[2][0] = x; v[2][1] = y+1; v[2][2] = z;
+            v[3][0] = x; v[3][1] = y+1; v[3][2] = z+1;
+            break;
+
+        case RIGHT:
+            v[0][0] = x+1; v[0][1] = y;   v[0][2] = z;
+            v[1][0] = x+1; v[1][1] = y;   v[1][2] = z+1;
+            v[2][0] = x+1; v[2][1] = y+1; v[2][2] = z+1;
+            v[3][0] = x+1; v[3][1] = y+1; v[3][2] = z;
+            break;
+
+        case BOTTOM: 
+            v[0][0] = x;   v[0][1] = y; v[0][2] = z+1;
+            v[1][0] = x+1; v[1][1] = y; v[1][2] = z+1;
+            v[2][0] = x+1; v[2][1] = y; v[2][2] = z;
+            v[3][0] = x;   v[3][1] = y; v[3][2] = z;
+            break;
+
+        case TOP: 
+            v[0][0] = x;   v[0][1] = y+1; v[0][2] = z;
+            v[1][0] = x+1; v[1][1] = y+1; v[1][2] = z;
+            v[2][0] = x+1; v[2][1] = y+1; v[2][2] = z+1;
+            v[3][0] = x;   v[3][1] = y+1; v[3][2] = z+1;
+            break;
+    }
+
+    // Adds vertices to m_vertices
+    for (int i = 0; i < 4; i++) {
+        m_vertices.push_back(v[i][0]);
+        m_vertices.push_back(v[i][1]);
+        m_vertices.push_back(v[i][2]);
+    }
+
+    // Adds indices
+    m_indices.push_back(startIndex + 0);
+    m_indices.push_back(startIndex + 1);
+    m_indices.push_back(startIndex + 2);
+
+    m_indices.push_back(startIndex + 0);
+    m_indices.push_back(startIndex + 2);
+    m_indices.push_back(startIndex + 3);
 }
 
 #endif
