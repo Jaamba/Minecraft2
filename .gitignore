@@ -9,3 +9,4 @@ src/glad.c
 build
 settings.json
 .vscode/*
+world.dat
