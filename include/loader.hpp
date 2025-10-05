@@ -137,6 +137,40 @@ inline void buildChunkIndex(std::fstream &file) {
     }
 }
 
+// Loads data from active chunks into vertices data
+inline void loadActiveVertices(Player& player, std::vector<float>& vertices, std::vector<unsigned int>& indices, 
+    Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]) {
+    
+    // Makes sure vectors are empty
+    vertices.clear();
+    indices.clear();
+
+    // Cicles into active chunks
+    for (int i = -RENDER_DISTANCE; i <= RENDER_DISTANCE; i++) {
+    for (int j = -RENDER_DISTANCE; j <= RENDER_DISTANCE; j++) {
+    for (int k = -RENDER_DISTANCE; k <= RENDER_DISTANCE; k++) {
+        // Current active chunk
+        Chunk* activeChunk = &(activeChunks[i + RENDER_DISTANCE][j + RENDER_DISTANCE][k + RENDER_DISTANCE]);
+
+        // Position of active chunk relative to player
+        glm::ivec3 relChunkPos = glm::ivec3(i, j, k)*(CHUNCK_SIZE);
+
+        // translate chunks vertices
+        std::vector<float> translatedVertices = activeChunk->translateVertices(relChunkPos);
+
+        // Calculates how much to translate indices
+        int toTranslate = vertices.size() / 3;
+
+        // Loads vertices
+        vertices.insert(vertices.end(), translatedVertices.begin(), translatedVertices.end());
+
+        // translates indices
+        std::vector<unsigned int> translatedIndices = activeChunk->translateIndices(toTranslate);
+        
+        // Loads indices
+        indices.insert(indices.end(), translatedIndices.begin(), translatedIndices.end());
+    }}}
+}
 
 }
 #endif

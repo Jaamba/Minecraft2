@@ -56,7 +56,12 @@ public:
     glm::ivec3 getChunkPos() const;
 
     // gets blocks verices and texture coordinates
-    const std::vector<float>& getChunkVertices() const;
+    std::vector<float> getChunkVertices() const;
+    std::vector<unsigned int> getChunkIndices() const;
+
+    // Returns a translated version of vertices
+    std::vector<float> translateVertices(glm::ivec3 offset) const;
+    std::vector<unsigned int> translateIndices(unsigned int offset) const;
 
     // chunk generation
     void fill(blockType type);
@@ -79,7 +84,10 @@ Chunk::Chunk(glm::ivec3 pos, BlockGrid blocks) {
     for (int i = 0; i < CHUNCK_SIZE; i++) {
         for (int j = 0; j < CHUNCK_SIZE; j++) {
             for (int k = 0; k < CHUNCK_SIZE; k++) {
-                addBlockVertices(pos + glm::ivec3(i, j, k));                
+                if (!m_blockGrid->blocks[i][j][k].isAir)
+                {
+                    addBlockVertices(glm::ivec3(i, j, k));                
+                }
             }
         }
     }
@@ -93,6 +101,9 @@ Chunk::Chunk(const Chunk& other) {
 
     m_blockGrid = new BlockGrid;
     *m_blockGrid = *other.m_blockGrid;
+
+    m_vertices = other.getChunkVertices();
+    m_indices = other.getChunkIndices();
 }
 
 Chunk& Chunk::operator=(const Chunk& other) {
@@ -107,6 +118,9 @@ Chunk& Chunk::operator=(const Chunk& other) {
         // reallocates and copies new memory
         m_blockGrid = new BlockGrid;
         *m_blockGrid = *other.m_blockGrid;
+
+        m_vertices = other.getChunkVertices();
+        m_indices = other.getChunkIndices();
     }
     return *this;
 }
@@ -153,11 +167,6 @@ glm::ivec3 Chunk::getChunkPos() const{
 }
 
 void Chunk::addBlockVertices(glm::ivec3 pos) {
-    // Checks if pos is not valid
-    if (pos.x >= CHUNCK_SIZE || pos.y >= CHUNCK_SIZE || pos.z >= CHUNCK_SIZE) {
-        throw "Error in addblockvertices: pos is larger than chunksize";
-    }
-    
     // Adds all faces
     for (int i = 0; i < 6; i++)
     {
@@ -236,5 +245,34 @@ void Chunk::addFace(glm::ivec3 pos, FaceDir direction) {
     m_indices.push_back(startIndex + 3);
 }
 
+std::vector<float> Chunk::getChunkVertices() const {
+    return m_vertices;
+}
+
+std::vector<unsigned int> Chunk::getChunkIndices() const {
+    return m_indices;
+}
+
+std::vector<float> Chunk::translateVertices(glm::ivec3 offset) const {
+    std::vector<float> translatedVertices;
+
+    for (int i = 0; i < m_vertices.size(); i += 3)
+    {
+        translatedVertices.push_back(m_vertices[i] + offset.x);
+        translatedVertices.push_back(m_vertices[i + 1] + offset.y);
+        translatedVertices.push_back(m_vertices[i + 2] + offset.z);
+    }
+
+    return translatedVertices;
+}
+
+std::vector<unsigned int> Chunk::translateIndices(unsigned int offset) const {
+    std::vector<unsigned int> indices;
+    for (int i = 0; i < m_indices.size(); i++)
+    {
+        indices.push_back(m_indices[i] + offset);
+    }
+    return indices;
+}
 #endif
 

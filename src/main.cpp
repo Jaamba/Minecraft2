@@ -70,70 +70,18 @@ int main() {
     glViewport(0, 0, WIDTH, HEIGHT);
 
 
-    // BUFFERS --------------------------------------------------------------------------
+    // BUFFERS AND GEOMETRY -------------------------------------------------------------
     
-    // defines the buffers. Index 0 for static blocks, 1 for dynamics
-    GLuint VAO[2], VBO[2], EBO[2];
-
+    // Vertices and indices of active chunks
+    std::vector<float> vertices;
+    std::vector<unsigned int> indices;
+    
     // Generates the buffers
-    glGenVertexArrays(2, VAO);
-    glGenBuffers(2, VBO);
-    glGenBuffers(2, EBO);
+    GLuint VAO, VBO, EBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 
-    // Binds the buffers for static blocks
-    glBindVertexArray(VAO[0]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]);
-
-    // Sends vertecies and indicies data to the buffers
-    glBufferData(GL_ARRAY_BUFFER, sizeof(b_vertices), b_vertices, GL_STATIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(b_indices), b_indices, GL_STATIC_DRAW);
-
-    // Enables position and uv attributes for shaders
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    // Unbinds
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    // Binds the buffers for dynamic blocks
-    glBindVertexArray(VAO[1]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[1]);
-
-    // Sends vertecies and indicies data to the buffers
-    glBufferData(GL_ARRAY_BUFFER, sizeof(b_vertices), b_vertices, GL_DYNAMIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(b_indices), b_indices, GL_DYNAMIC_DRAW);
-
-    // Enables position and uv attributes for shaders
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    // Unbinds
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-
-    // TEXTURE LOADING ------------------------------------------------------------------
-    
-    // Counts textured blocks
-    int texturedBlocksN = sizeof(t_texturesIDs)/sizeof(t_texturesIDs[0]);
-    unsigned int textures[texturedBlocksN];
-
-    // Pre-loads textures and stores them in textures[]
-    for (int i = 0; i < texturedBlocksN; i++)
-    {
-        loadTexture(t_texturesIDs[i].filename, &textures[i]);
-    }
-    
-   
     // MOVEMENT ------------------------------------------------------------------
 
     // Sets mouse callback function for camera direction update
@@ -176,10 +124,33 @@ int main() {
     wl::buildChunkIndex(worldFile);
 
     // Loads first chunks
-    glm::ivec3 oldChunkPos = player.getChunkPosition();
     wl::loadActiveChunks(player, worldGen, worldFile, activeChunks);
+    // Loads vertices
+    wl::loadActiveVertices(player, vertices, indices, activeChunks);
+
+    // Stores old plyaer chunk position
+    glm::ivec3 oldChunkPos = player.getChunkPosition();
+
+    // Binds buffers
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+    // Sends vertecies and indicies data to the buffers
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*vertices.size(), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int)*indices.size(), indices.data(), GL_STATIC_DRAW);
+
+    // Enables position attribute for shaders
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // Unbinds
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     #ifdef DEBUG
+    std::cout << "Loaded " << vertices.size() / 3 << " triangles\n";
     std::vector<float> times;
     #endif
 
@@ -189,16 +160,35 @@ int main() {
         currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-
         
         // Input and movement
         player.processCameraMovement(window, deltaTime);
         
-        
         // chunk loading: only loads if chunk position changed
         if (oldChunkPos != player.getChunkPosition())
         {
+            // reloads chunks
             wl::loadActiveChunks(player, worldGen, worldFile, activeChunks);
+            // reloads vertices
+            wl::loadActiveVertices(player, vertices, indices, activeChunks);
+
+            // Updates vertex data:
+            glBindVertexArray(VAO);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+            // Sends vertecies and indicies data to the buffers
+            glBufferData(GL_ARRAY_BUFFER, sizeof(float)*vertices.size(), vertices.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int)*indices.size(), indices.data(), GL_STATIC_DRAW);
+
+            // Enables position attribute for shaders
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+            glEnableVertexAttribArray(0);
+
+            // Unbinds
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glBindVertexArray(0);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         }
         oldChunkPos = player.getChunkPosition();
         
@@ -212,54 +202,23 @@ int main() {
         // Sets view matrix
         view = player.getView();
 
-        // Chunk rendering
-        int limit = 2*RENDER_DISTANCE + 1; 
-        for (int n = 0; n < limit * limit * limit; n++) {
-            int cx = (n / (limit * limit)) - RENDER_DISTANCE;
-            int cy = ((n / limit) % limit )- RENDER_DISTANCE;
-            int cz = (n % limit) - RENDER_DISTANCE;
-            
-            Chunk activeChunk = activeChunks[cx + RENDER_DISTANCE][cy + RENDER_DISTANCE][cz + RENDER_DISTANCE];
-            
-            for (int m = 0; m < CHUNCK_SIZE * CHUNCK_SIZE * CHUNCK_SIZE; m++) {
-                int i = m / (CHUNCK_SIZE * CHUNCK_SIZE);
-                int j = (m / CHUNCK_SIZE) % CHUNCK_SIZE;
-                int k = m % CHUNCK_SIZE;
 
-                blockType activeBlock = activeChunk.getBlock(i, j, k);
+        // Chunk rendering -------------------------------------------------------------
+        
+        glm::mat4 model(1.0f);
+        model = glm::scale(model, glm::vec3(SCALE_FACTOR));
+        model = glm::translate(model, glm::vec3((CHUNCK_SIZE)*activeChunks[RENDER_DISTANCE][RENDER_DISTANCE][RENDER_DISTANCE].getChunkPos()));
 
-                // Ignores air rendering
-                if(activeBlock.isAir) continue;
+        // Assigns matrices values to shaders
+        glUniformMatrix4fv(baseModelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(baseViewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(baseProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-                // Translates model to bottom left corner of chunk
-                glm::mat4 model(1.0f);
-                model = glm::scale(model, glm::vec3(SCALE_FACTOR));
-                model = glm::translate(model, (glm::vec3)(CHUNCK_SIZE*activeChunk.getChunkPos()) + glm::vec3(i, j, k));
+        glBindVertexArray(VAO);
+        // Draws
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
-                // Assigns matrices values to shaders
-                glUniformMatrix4fv(baseModelLoc, 1, GL_FALSE, glm::value_ptr(model));
-                glUniformMatrix4fv(baseViewLoc, 1, GL_FALSE, glm::value_ptr(view));
-                glUniformMatrix4fv(baseProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-                
-                // Binds block texture
-                glBindTexture(GL_TEXTURE_2D, textures[activeBlock.ID]);
-
-                // Binds dynamic VAO if the block has gravity
-                if (activeBlock.hasGravity) {
-                    glBindVertexArray(VAO[1]);
-                }
-                else {
-                    glBindVertexArray(VAO[0]);
-                }
-
-                // Renders the block
-                //std::cout << "drawing block...\n";
-                glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-            }
-        }
-
-
-        // Buffers swap and events
+        // Buffers swap and events -------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
 
@@ -269,20 +228,20 @@ int main() {
     }
 
     #ifdef DEBUG
-    float sum;
+    float sum = 0;
     for (int i = 0; i < times.size(); i++)
     {
         sum += times[i];
     }
-    std::cout << "DEBUG: Average frame time: " << sum/times.size() << std::endl;
+    std::cout << "DEBUG: Average frame FPS: " << times.size()/sum << std::endl;
     #endif
 
     // Terminates the program
     worldFile.close();
 
-    glDeleteVertexArrays(2, VAO);
-	glDeleteBuffers(2, VBO);
-	glDeleteBuffers(2, EBO);
+    glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
 	baseShader.Delete();
 
     glfwDestroyWindow(window);

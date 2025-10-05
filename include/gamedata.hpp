@@ -6,7 +6,7 @@
 #define HEIGHT 800
 #define SCALE_FACTOR 1
 #define RENDER_DISTANCE 3
-#define CHUNCK_SIZE 5
+#define CHUNCK_SIZE 10
 
 // for debug
 #define DEBUG
