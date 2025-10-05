@@ -5,8 +5,11 @@
 #define WIDTH 800
 #define HEIGHT 800
 #define SCALE_FACTOR 1
-#define RENDER_DISTANCE 3
+#define RENDER_DISTANCE 10
 #define CHUNCK_SIZE 5
+
+// Function for accessing active Chunk data
+#define IDX(x,y,z) ((x) + (y)*(2*RENDER_DISTANCE + 1) + (z)*(2*RENDER_DISTANCE + 1)*(2*RENDER_DISTANCE + 1))
 
 // for debug
 #define DEBUG

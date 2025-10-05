@@ -101,7 +101,7 @@ int main() {
 
     // WORLD LOADING ------------------------------------------------------------------
    
-    Chunk activeChunks[2*RENDER_DISTANCE + 1][2*RENDER_DISTANCE + 1][2*RENDER_DISTANCE + 1];
+    Chunk* activeChunks = new Chunk[(2*RENDER_DISTANCE + 1)*(2*RENDER_DISTANCE + 1)*(2*RENDER_DISTANCE + 1)];
 
     // opens world file
     std::fstream worldFile("../world.dat", std::ios::in | std::ios::out | std::ios::app);
@@ -218,7 +218,7 @@ int main() {
         // Sets active chunks position
         glm::mat4 model(1.0f);
         model = glm::scale(model, glm::vec3(SCALE_FACTOR));
-        model = glm::translate(model, glm::vec3((CHUNCK_SIZE)*activeChunks[RENDER_DISTANCE][RENDER_DISTANCE][RENDER_DISTANCE].getChunkPos()));
+        model = glm::translate(model, glm::vec3((CHUNCK_SIZE)*activeChunks[IDX(RENDER_DISTANCE, RENDER_DISTANCE, RENDER_DISTANCE)].getChunkPos()));
 
         // Assigns matrices values to shaders
         glUniformMatrix4fv(baseModelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -261,6 +261,7 @@ int main() {
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
 	baseShader.Delete();
+    delete[] activeChunks;
 
     glfwDestroyWindow(window);
     glfwTerminate();

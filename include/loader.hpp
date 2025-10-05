@@ -39,7 +39,7 @@ inline std::unordered_map<std::tuple<int, int, int>, std::streampos, KeyHash, Ke
 
 // Reads chunks from a file and loads them to activechunks
 inline void loadActiveChunks(Player &player, WorldGenerator &generator, std::fstream &file, 
-    Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]) {
+    Chunk* activeChunks) {
     
     // Determines the position of the lower left corner chunk to be loaded
     int tx = floor(player.getChunkPosition().x - RENDER_DISTANCE);
@@ -72,11 +72,11 @@ inline void loadActiveChunks(Player &player, WorldGenerator &generator, std::fst
                     file.read(reinterpret_cast<char*>(&data), header.size);
 
                     // Adds the loaded chunk to activeChunks
-                    activeChunks[i][j][k] = Chunk(glm::ivec3(x, y, z), data);
+                    activeChunks[IDX(i, j, k)] = Chunk(glm::ivec3(x, y, z), data);
                 } else {
                     // If the key is not in the file, creates the chunk
                     BlockGrid data = generator.genChunk(x,y,z);
-                    activeChunks[i][j][k] = Chunk(glm::ivec3(x, y, z), data);
+                    activeChunks[IDX(i, j, k)] = Chunk(glm::ivec3(x, y, z), data);
 
                     // Adds the chunk to the end of the file
                     file.clear();
@@ -139,7 +139,7 @@ inline void buildChunkIndex(std::fstream &file) {
 
 // Loads data from active chunks into vertices data
 inline void loadActiveVertices(Player& player, std::vector<float>& vertices, std::vector<unsigned int>& indices, 
-    Chunk (&activeChunks)[2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1][2*RENDER_DISTANCE+1]) {
+    const Chunk* activeChunks) {
     
     // Makes sure vectors are empty
     vertices.clear();
@@ -150,7 +150,7 @@ inline void loadActiveVertices(Player& player, std::vector<float>& vertices, std
     for (int j = -RENDER_DISTANCE; j <= RENDER_DISTANCE; j++) {
     for (int k = -RENDER_DISTANCE; k <= RENDER_DISTANCE; k++) {
         // Current active chunk
-        Chunk* activeChunk = &(activeChunks[i + RENDER_DISTANCE][j + RENDER_DISTANCE][k + RENDER_DISTANCE]);
+        const Chunk* activeChunk = &(activeChunks[IDX(i + RENDER_DISTANCE, j + RENDER_DISTANCE, k + RENDER_DISTANCE)]);
 
         // Position of active chunk relative to player
         glm::ivec3 relChunkPos = glm::ivec3(i, j, k)*(CHUNCK_SIZE);
