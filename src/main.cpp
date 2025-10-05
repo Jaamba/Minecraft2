@@ -82,6 +82,7 @@ int main() {
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
 
+
     // MOVEMENT ------------------------------------------------------------------
 
     // Sets mouse callback function for camera direction update
@@ -98,18 +99,9 @@ int main() {
 	unsigned int baseProjectionLoc = glGetUniformLocation(baseShader.ID, "projection");
 
 
-    // CHUNKS CREATION ------------------------------------------------------------------
+    // WORLD LOADING ------------------------------------------------------------------
    
     Chunk activeChunks[2*RENDER_DISTANCE + 1][2*RENDER_DISTANCE + 1][2*RENDER_DISTANCE + 1];
-
-    // MAIN PROGRAM LOOP ----------------------------------------------------------------
-
-    // Enables depth test for OpenGL to properly render
-    glEnable(GL_DEPTH_TEST);
-
-    // view and projection matrices
-    glm::mat4 view = player.getView();
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WIDTH / HEIGHT, 0.1f, 100.0f);
 
     // opens world file
     std::fstream worldFile("../world.dat", std::ios::in | std::ios::out | std::ios::app);
@@ -127,9 +119,6 @@ int main() {
     wl::loadActiveChunks(player, worldGen, worldFile, activeChunks);
     // Loads vertices
     wl::loadActiveVertices(player, vertices, indices, activeChunks);
-
-    // Stores old plyaer chunk position
-    glm::ivec3 oldChunkPos = player.getChunkPosition();
 
     // Binds buffers
     glBindVertexArray(VAO);
@@ -152,7 +141,21 @@ int main() {
     #ifdef DEBUG
     std::cout << "Loaded " << vertices.size() / 3 << " triangles\n";
     std::vector<float> times;
+    std::vector<float> loadingChunksTimes;
     #endif
+
+
+    // MAIN PROGRAM LOOP ----------------------------------------------------------------
+
+    // Enables depth test for OpenGL to properly render
+    glEnable(GL_DEPTH_TEST);
+
+    // view and projection matrices
+    glm::mat4 view = player.getView();
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WIDTH / HEIGHT, 0.1f, 100.0f);
+
+    // Stores old plyaer chunk position
+    glm::ivec3 oldChunkPos = player.getChunkPosition();
 
     while (!glfwWindowShouldClose(window)) {
 
@@ -167,10 +170,20 @@ int main() {
         // chunk loading: only loads if chunk position changed
         if (oldChunkPos != player.getChunkPosition())
         {
+            #ifdef DEBUG
+                std::cout << "Player chunk position: " << player.getChunkPosition().x << " " << player.getChunkPosition().y << " " << player.getChunkPosition().z << "\n";
+                std::cout << "Loading chunks \n";
+                float loadChunkTime = glfwGetTime();
+            #endif
+
             // reloads chunks
             wl::loadActiveChunks(player, worldGen, worldFile, activeChunks);
             // reloads vertices
             wl::loadActiveVertices(player, vertices, indices, activeChunks);
+
+            #ifdef DEBUG
+                loadingChunksTimes.push_back(glfwGetTime() - loadChunkTime);
+            #endif
 
             // Updates vertex data:
             glBindVertexArray(VAO);
@@ -201,10 +214,8 @@ int main() {
 
         // Sets view matrix
         view = player.getView();
-
-
-        // Chunk rendering -------------------------------------------------------------
         
+        // Sets active chunks position
         glm::mat4 model(1.0f);
         model = glm::scale(model, glm::vec3(SCALE_FACTOR));
         model = glm::translate(model, glm::vec3((CHUNCK_SIZE)*activeChunks[RENDER_DISTANCE][RENDER_DISTANCE][RENDER_DISTANCE].getChunkPos()));
@@ -214,8 +225,8 @@ int main() {
         glUniformMatrix4fv(baseViewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(baseProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-        glBindVertexArray(VAO);
         // Draws
+        glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
         // Buffers swap and events -------------------------------------------------------
@@ -234,6 +245,13 @@ int main() {
         sum += times[i];
     }
     std::cout << "DEBUG: Average frame FPS: " << times.size()/sum << std::endl;
+
+    float sum2 = 0;
+    for (int i = 0; i < loadingChunksTimes.size(); i++)
+    {
+        sum2 += loadingChunksTimes[i];
+    }
+    std::cout << "DEBUG: Average chunk loading time: " << sum2/loadingChunksTimes.size() << std::endl;
     #endif
 
     // Terminates the program
